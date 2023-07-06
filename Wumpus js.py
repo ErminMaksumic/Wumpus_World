@@ -110,21 +110,28 @@ class WumpusGame:
         self.wumpus_pos = new_pos
 
     def display_grid(self):
+        print("+" + "-" * (4 * self.size - 1) + "+")
         for i in range(self.size):
             for j in range(self.size):
                 if (i, j) == self.agent_pos:
-                    print("A", end="\t")
+                    print("| A ", end="")
                 elif (i, j) == self.wumpus_pos:
-                    print("W", end="\t")
+                    print("| W ", end="")
                 elif (i, j) == self.pit_pos:
-                    print("P", end="\t")
+                    print("| P ", end="")
                 elif (i, j) == self.gold_pos:
-                    print("G", end="\t")
+                    print("| G ", end="")
                 elif (i, j) in self.get_adjacent_cells(self.pit_pos):
-                    print("B", end="\t")
+                    print("| B ", end="")
                 else:
-                    print("-", end="\t")
-            print()
+                    print("|   ", end="")
+            print("|")
+            if i != self.size - 1:
+                print("|" + "---|" * self.size)
+        print("+" + "-" * (4 * self.size - 1) + "+")
+
+
+
 
 # Testing the game
 game = WumpusGame()
