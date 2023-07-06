@@ -8,6 +8,7 @@ class WumpusGame:
         self.wumpus_pos = None
         self.pit_pos = None
         self.gold_pos = None
+        self.arrows = 1
 
     def initialize_game(self):
         self.agent_pos = (0, 0)
@@ -17,6 +18,7 @@ class WumpusGame:
         while self.wumpus_pos == self.pit_pos or self.wumpus_pos == self.gold_pos or self.pit_pos == self.gold_pos:
             self.pit_pos = self.generate_random_position()
             self.gold_pos = self.generate_random_position()
+        self.arrows = 1
 
     def generate_random_position(self):
         return random.randint(0, self.size - 1), random.randint(0, self.size - 1)
@@ -57,6 +59,29 @@ class WumpusGame:
             return True
         return False
 
+    def shoot_arrow(self, direction):
+        if self.arrows <= 0:
+            print("You have no arrows left.")
+            return False
+
+        self.arrows -= 1
+        x, y = self.agent_pos
+        if direction == 'up':
+            pos = (x - 1, y)
+        elif direction == 'down':
+            pos = (x + 1, y)
+        elif direction == 'left':
+            pos = (x, y - 1)
+        elif direction == 'right':
+            pos = (x, y + 1)
+        else:
+            return False
+
+        if self.is_valid_move(pos):
+            self.handle_shot(pos)
+            return True
+        return False
+
     def handle_encounter(self):
         x, y = self.agent_pos
         if self.agent_pos == self.wumpus_pos:
@@ -73,29 +98,35 @@ class WumpusGame:
         elif self.pit_pos in self.get_adjacent_cells(self.agent_pos):
             print("You feel a cool breeze.")
 
+    def handle_shot(self, pos):
+        if pos == self.wumpus_pos:
+            print("Congratulations! You shot the Wumpus.")
+            self.wumpus_pos = None
+        else:
+            print("You missed.")
+            self.move_wumpus()
+
+    def move_wumpus(self):
+        adjacent_cells = self.get_adjacent_cells(self.wumpus_pos)
+        new_pos = random.choice(adjacent_cells)
+        self.wumpus_pos = new_pos
+
     def display_grid(self):
         for i in range(self.size):
-            print("+" + "---+" * self.size)  # Horizontal line
-
             for j in range(self.size):
                 if (i, j) == self.agent_pos:
-                    print("| A ", end="")
+                    print("A", end="\t")
                 elif (i, j) == self.wumpus_pos:
-                    print("| W ", end="")
+                    print("W", end="\t")
                 elif (i, j) == self.pit_pos:
-                    print("| P ", end="")
+                    print("P", end="\t")
                 elif (i, j) == self.gold_pos:
-                    print("| G ", end="")
-                elif (i, j) in self.get_adjacent_cells(self.pit_pos): #or (i, j) in self.get_adjacent_cells(self.wumpus_pos):
-                    print("| B ", end="")
+                    print("G", end="\t")
+                elif (i, j) in self.get_adjacent_cells(self.pit_pos) or (i, j) in self.get_adjacent_cells(self.wumpus_pos):
+                    print("B", end="\t")
                 else:
-                    print("|   ", end="")
-            print("|")  # End of row
-
-        print("+" + "---+" * self.size)  # Final horizontal line
-
-
-
+                    print("-", end="\t")
+            print()
 
 # Testing the game
 game = WumpusGame()
@@ -103,8 +134,18 @@ game.initialize_game()
 game.display_grid()
 
 while True:
-    direction = input("Enter your move (up, down, left, right): ")
-    if game.move_agent(direction.lower()):
-        game.display_grid()
+    action = input("Enter your action (move: up, down, left, right; shoot: shoot up, shoot down, shoot left, shoot right): ")
+    action = action.lower().split()
+
+    if len(action) == 2 and action[0] == 'shoot':
+        if game.shoot_arrow(action[1]):
+            game.display_grid()
+        else:
+            print("Invalid action. Try again.")
+    elif len(action) == 1 and action[0] in ['up', 'down', 'left', 'right']:
+        if game.move_agent(action[0]):
+            game.display_grid()
+        else:
+            print("Invalid action. Try again.")
     else:
-        print("Invalid move. Try again.")
+        print("Invalid action. Try again.")
