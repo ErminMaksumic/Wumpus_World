@@ -93,8 +93,6 @@ class WumpusGame:
         elif self.agent_pos == self.gold_pos:
             print("Congratulations! You found the gold.")
             self.initialize_game()
-        elif self.wumpus_pos in self.get_adjacent_cells(self.agent_pos):
-            print("You smell a terrible stench.")
         elif self.pit_pos in self.get_adjacent_cells(self.agent_pos):
             print("You feel a cool breeze.")
 
@@ -122,7 +120,7 @@ class WumpusGame:
                     print("P", end="\t")
                 elif (i, j) == self.gold_pos:
                     print("G", end="\t")
-                elif (i, j) in self.get_adjacent_cells(self.pit_pos) or (i, j) in self.get_adjacent_cells(self.wumpus_pos):
+                elif (i, j) in self.get_adjacent_cells(self.pit_pos):
                     print("B", end="\t")
                 else:
                     print("-", end="\t")
