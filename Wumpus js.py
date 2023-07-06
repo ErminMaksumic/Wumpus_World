@@ -9,6 +9,7 @@ class WumpusGame:
         self.pit_pos = None
         self.gold_pos = None
         self.arrows = 1
+        self.score = 0
 
     def initialize_game(self):
         self.agent_pos = (0, 0)
@@ -19,6 +20,7 @@ class WumpusGame:
             self.pit_pos = self.generate_random_position()
             self.gold_pos = self.generate_random_position()
         self.arrows = 1
+        self.score = 0
 
     def generate_random_position(self):
         return random.randint(0, self.size - 1), random.randint(0, self.size - 1)
@@ -56,6 +58,7 @@ class WumpusGame:
         if self.is_valid_move(new_pos):
             self.agent_pos = new_pos
             self.handle_encounter()
+            self.score -= 1
             return True
         return False
 
@@ -79,20 +82,20 @@ class WumpusGame:
 
         if self.is_valid_move(pos):
             self.handle_shot(pos)
+            self.score -= 10
             return True
         return False
 
     def handle_encounter(self):
-        x, y = self.agent_pos
         if self.agent_pos == self.wumpus_pos:
-            print("Game over! You were eaten by the Wumpus.")
-            self.initialize_game()
+            self.score -= 1000
+            self.end_game("Game over! You were eaten by the Wumpus.", self.score)
         elif self.agent_pos == self.pit_pos:
-            print("Game over! You fell into a pit.")
-            self.initialize_game()
+            self.score -= 1000
+            self.end_game("Game over! You fell into a pit.", self.score)
         elif self.agent_pos == self.gold_pos:
-            print("Congratulations! You found the gold.")
-            self.initialize_game()
+            self.score += 1000
+            self.end_game("Congratulations! You found the gold.", self.score)
         elif self.pit_pos in self.get_adjacent_cells(self.agent_pos):
             print("You feel a cool breeze.")
 
@@ -100,6 +103,7 @@ class WumpusGame:
         if pos == self.wumpus_pos:
             print("Congratulations! You shot the Wumpus.")
             self.wumpus_pos = None
+            self.score += 1
         else:
             print("You missed.")
             self.move_wumpus()
@@ -108,6 +112,11 @@ class WumpusGame:
         adjacent_cells = self.get_adjacent_cells(self.wumpus_pos)
         new_pos = random.choice(adjacent_cells)
         self.wumpus_pos = new_pos
+    
+    def end_game(self, message, final_score):
+        print(message)
+        print("Your final score is:", final_score)
+        self.initialize_game()
 
     def display_grid(self):
         print("+" + "-" * (4 * self.size - 1) + "+")
@@ -130,9 +139,6 @@ class WumpusGame:
                 print("|" + "---|" * self.size)
         print("+" + "-" * (4 * self.size - 1) + "+")
 
-
-
-
 # Testing the game
 game = WumpusGame()
 game.initialize_game()
@@ -154,3 +160,5 @@ while True:
             print("Invalid action. Try again.")
     else:
         print("Invalid action. Try again.")
+
+    print("Score:", game.score)
