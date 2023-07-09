@@ -12,6 +12,8 @@ class WumpusGame:
         self.arrows = 1
         self.score = 0
         self.game_ended = False
+        self.wins = 0
+        self.losses = 0
 
     def initialize_game(self):
         self.agent_pos = (0, 0)
@@ -125,6 +127,10 @@ class WumpusGame:
         print(message)
         print("Your final score is:", final_score)
         self.game_ended = True
+        if self.agent_pos == self.gold_pos:
+            self.wins += 1
+        elif self.score <= -1000:
+            self.losses += 1
 
     def display_grid(self):
         print("+" + "-" * (4 * self.size - 1) + "+")
@@ -151,35 +157,38 @@ class WumpusGame:
 
     
     def bfs(self):
-        # Initialize visited and queue
         visited = set()
         queue = deque()
-
-        # Add the agent's initial position to the queue
         queue.append((self.agent_pos, []))
 
         while queue:
             position, path = queue.popleft()
             x, y = position
 
-            # Check if the current position is the gold position
             if position == self.gold_pos:
                 return path
 
-            # Check if the current position is not visited
             if position not in visited:
                 visited.add(position)
 
-                # Add the adjacent cells to the queue
                 adjacent_cells = self.get_adjacent_cells(position)
                 for adjacent_cell in adjacent_cells:
                     if adjacent_cell not in visited:
-                        queue.append((adjacent_cell, path + [adjacent_cell]))
+                        has_breeze = adjacent_cell == self.pit_pos
+                        has_stench = adjacent_cell == self.wumpus_pos
+
+                        # Introduce randomness to the decision-making process
+                        if random.random() < 0.2 and (has_breeze or has_stench):
+                            queue.append((adjacent_cell, path + [adjacent_cell]))
+                        elif not (has_breeze or has_stench):
+                            queue.append((adjacent_cell, path + [adjacent_cell]))
 
         return None
 
+
+
     def automate_game(self):
-        for _ in range(10):
+        for _ in range(10000):
             self.initialize_game()
             self.display_grid()
 
@@ -189,6 +198,7 @@ class WumpusGame:
 
                 if path is None:
                     print("No path to the gold position.")
+                    #self.losses += 1
                     break
 
                 # Move the agent along the path
@@ -223,6 +233,8 @@ class WumpusGame:
                         print("Game over! You lost.")
                         break
             print("-------------------------------------")
+            print("Wins:", self.wins)
+            print("Losses:", self.losses)
         
 
     def get_direction(self, current_pos, next_pos):
