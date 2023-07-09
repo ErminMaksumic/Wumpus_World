@@ -1,10 +1,10 @@
 import random
-from collections import deque
+import numpy as np
 
 class WumpusGame:
     def __init__(self, size=6):
         self.size = size
-        self.grid = [[[] for _ in range(size)] for _ in range(size)]
+        self.grid = [[' ' for _ in range(size)] for _ in range(size)]
         self.agent_pos = (0, 0)
         self.wumpus_pos = None
         self.pit_pos = None
@@ -14,6 +14,7 @@ class WumpusGame:
         self.game_ended = False
         self.wins = 0
         self.losses = 0
+        self.q_table = np.zeros((size, size, 4))  # Q-table for Q-learning
 
     def initialize_game(self):
         self.agent_pos = (0, 0)
@@ -64,7 +65,7 @@ class WumpusGame:
         if self.is_valid_move(new_pos):
             self.agent_pos = new_pos
             self.handle_encounter()
-            if self.game_ended != True:
+            if not self.game_ended:
                 self.score -= 1
             return True
         return False
@@ -102,7 +103,7 @@ class WumpusGame:
             self.end_game("Game over! You fell into a pit.", self.score)
         elif self.agent_pos == self.gold_pos:
             self.score += 1000
-            self.end_game("handle_encounter.Congratulations! You found the gold.", self.score)
+            self.end_game("Congratulations! You found the gold.", self.score)
         elif self.pit_pos in self.get_adjacent_cells(self.agent_pos):
             print("You feel a cool breeze.")
         elif self.wumpus_pos in self.get_adjacent_cells(self.agent_pos):
@@ -121,7 +122,7 @@ class WumpusGame:
         adjacent_cells = self.get_adjacent_cells(self.wumpus_pos)
         new_pos = random.choice(adjacent_cells)
         self.wumpus_pos = new_pos
-    
+
     def end_game(self, message, final_score):
         self.display_grid()
         print(message)
@@ -155,88 +156,15 @@ class WumpusGame:
                 print("|" + "---|" * self.size)
         print("+" + "-" * (4 * self.size - 1) + "+")
 
-    
-    def bfs(self):
-        visited = set()
-        queue = deque()
-        queue.append((self.agent_pos, []))
+    def update_q_table(self, state, action, next_state, reward, learning_rate, discount_factor):
+        x, y = state
+        x_next, y_next = next_state
 
-        while queue:
-            position, path = queue.popleft()
-            x, y = position
+        current_q = self.q_table[x, y, action]
+        max_q_next = np.max(self.q_table[x_next, y_next])
 
-            if position == self.gold_pos:
-                return path
-
-            if position not in visited:
-                visited.add(position)
-
-                adjacent_cells = self.get_adjacent_cells(position)
-                for adjacent_cell in adjacent_cells:
-                    if adjacent_cell not in visited:
-                        has_breeze = adjacent_cell == self.pit_pos
-                        has_stench = adjacent_cell == self.wumpus_pos
-
-                        # Introduce randomness to the decision-making process
-                        if random.random() < 0.2 and (has_breeze or has_stench):
-                            queue.append((adjacent_cell, path + [adjacent_cell]))
-                        elif not (has_breeze or has_stench):
-                            queue.append((adjacent_cell, path + [adjacent_cell]))
-
-        return None
-
-
-
-    def automate_game(self):
-        for _ in range(10000):
-            self.initialize_game()
-            self.display_grid()
-
-            while True:
-                # Use BFS to find the path to the gold position
-                path = self.bfs()
-
-                if path is None:
-                    print("No path to the gold position.")
-                    #self.losses += 1
-                    break
-
-                # Move the agent along the path
-                for position in path:
-                    if self.game_ended != True:
-                        direction = self.get_direction(self.agent_pos, position)
-                        self.move_agent(direction)
-                        self.display_grid()
-                        print("Score:", self.score)
-
-                    # Check if the agent found the gold or the game ended
-                    if self.agent_pos == self.gold_pos:
-                        print("Congratulations! You found the gold.")
-                        break
-                    elif self.score <= -1000:
-                        print("Game over! You lost.")
-                        break
-
-                # Check if the agent found the gold or the game ended
-                if self.agent_pos == self.gold_pos or self.score <= -1000:
-                    break
-
-                # Shoot an arrow
-                if self.arrows > 0:
-                    self.shoot_arrow('up')
-
-                    # Check if the agent found the gold or the game ended
-                    if self.agent_pos == self.gold_pos:
-                        print("Congratulations! You found the gold.")
-                        break
-                    elif self.score <= -1000:
-                        print("Game over! You lost.")
-                        break
-            print("-------------------------------------")
-            print("Wins:", self.wins)
-            print("Losses:", self.losses)
-        
-
+        new_q = (1 - learning_rate) * current_q + learning_rate * (reward + discount_factor * max_q_next)
+        self.q_table[x, y, action] = new_q
     def get_direction(self, current_pos, next_pos):
         cx, cy = current_pos
         nx, ny = next_pos
@@ -251,6 +179,69 @@ class WumpusGame:
             return 'left'
         else:
             return ''
+
+    def automate_game(self):
+        learning_rate = 0.1
+        discount_factor = 0.9
+        epsilon = 0.1
+
+        for _ in range(10):
+            self.initialize_game()
+            self.display_grid()
+
+            while True:
+                state = self.agent_pos
+
+                # Explore or exploit
+                if random.random() < epsilon:
+                    # Explore: choose a random action
+                    action = random.randint(0, 3)  # 0: up, 1: down, 2: left, 3: right
+                else:
+                    # Exploit: choose the action with the highest Q-value
+                    x, y = state
+                    q_values = self.q_table[x, y]
+                    action = np.argmax(q_values)
+
+                direction = self.get_direction(self.agent_pos, self.get_next_position(action))
+                self.move_agent(direction)
+                self.display_grid()
+                print("Score:", self.score)
+
+                next_state = self.agent_pos
+                reward = self.calculate_reward()
+
+                # Update the Q-table
+                self.update_q_table(state, action, next_state, reward, learning_rate, discount_factor)
+
+                # Check if the game ended
+                if self.game_ended:
+                    break
+
+            print("-------------------------------------")
+            print("Wins:", self.wins)
+            print("Losses:", self.losses)
+
+    def calculate_reward(self):
+        if self.agent_pos == self.gold_pos:
+            return 1000
+        elif self.agent_pos == self.wumpus_pos or self.agent_pos == self.pit_pos:
+            return -1000
+        else:
+            return -1
+
+    def get_next_position(self, action):
+        x, y = self.agent_pos
+
+        if action == 0:  # Up
+            return x - 1, y
+        elif action == 1:  # Down
+            return x + 1, y
+        elif action == 2:  # Left
+            return x, y - 1
+        elif action == 3:  # Right
+            return x, y + 1
+        else:
+            return x, y
 
 # Testing the game
 game = WumpusGame()
