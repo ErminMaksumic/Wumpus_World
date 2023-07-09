@@ -19,8 +19,10 @@ class WumpusGame:
         self.pit_pos = self.generate_random_position()
         self.gold_pos = self.generate_random_position()
         while self.wumpus_pos == self.pit_pos or self.wumpus_pos == self.gold_pos or self.pit_pos == self.gold_pos:
+        while self.wumpus_pos == self.pit_pos or self.wumpus_pos == self.gold_pos or self.pit_pos == self.gold_pos or self.wumpus_pos == self.agent_pos or self.pit_pos == self.agent_pos or self.gold_pos == self.agent_pos:
             self.pit_pos = self.generate_random_position()
             self.gold_pos = self.generate_random_position()
+            self.wumpus_pos = self.generate_random_position()
         self.arrows = 1
         self.score = 0
         self.game_ended = False
