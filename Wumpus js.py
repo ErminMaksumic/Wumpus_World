@@ -102,6 +102,8 @@ class WumpusGame:
             self.end_game("handle_encounter.Congratulations! You found the gold.", self.score)
         elif self.pit_pos in self.get_adjacent_cells(self.agent_pos):
             print("You feel a cool breeze.")
+        elif self.wumpus_pos in self.get_adjacent_cells(self.agent_pos):
+            print("You smell a foul stench.")
 
     def handle_shot(self, pos):
         if pos == self.wumpus_pos:
@@ -122,7 +124,6 @@ class WumpusGame:
         print(message)
         print("Your final score is:", final_score)
         self.game_ended = True
-        #self.initialize_game()
 
     def display_grid(self):
         print("+" + "-" * (4 * self.size - 1) + "+")
@@ -138,6 +139,8 @@ class WumpusGame:
                     print("| G ", end="")
                 elif (i, j) in self.get_adjacent_cells(self.pit_pos):
                     print("| B ", end="")
+                elif (i, j) in self.get_adjacent_cells(self.wumpus_pos):
+                    print("| S ", end="")
                 else:
                     print("|   ", end="")
             print("|")
@@ -218,14 +221,6 @@ class WumpusGame:
                     elif self.score <= -1000:
                         print("Game over! You lost.")
                         break
-
-            # Check if the agent found the gold or the game ended
-            # if self.agent_pos == self.gold_pos:
-            #     print("Congratulations! You found the gold.")
-            # elif self.score <= -1000:
-            #     print("Game over! You lost.")
-                
-            #print("Final Score:", self.score)
             print("-------------------------------------")
         
 
@@ -247,22 +242,3 @@ class WumpusGame:
 # Testing the game
 game = WumpusGame()
 game.automate_game()
-
-# while True:
-#     action = input("Enter your action (move: up, down, left, right; shoot: shoot up, shoot down, shoot left, shoot right): ")
-#     action = action.lower().split()
-
-#     if len(action) == 2 and action[0] == 'shoot':
-#         if game.shoot_arrow(action[1]):
-#             game.display_grid()
-#         else:
-#             print("Invalid action. Try again.")
-#     elif len(action) == 1 and action[0] in ['up', 'down', 'left', 'right']:
-#         if game.move_agent(action[0]):
-#             game.display_grid()
-#         else:
-#             print("Invalid action. Try again.")
-#     else:
-#         print("Invalid action. Try again.")
-
-#     print("Score:", game.score)
