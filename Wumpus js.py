@@ -1,4 +1,5 @@
 import random
+from collections import deque
 
 class WumpusGame:
     def __init__(self, size=6):
@@ -10,6 +11,7 @@ class WumpusGame:
         self.gold_pos = None
         self.arrows = 1
         self.score = 0
+        self.game_ended = False
 
     def initialize_game(self):
         self.agent_pos = (0, 0)
@@ -21,6 +23,7 @@ class WumpusGame:
             self.gold_pos = self.generate_random_position()
         self.arrows = 1
         self.score = 0
+        self.game_ended = False
 
     def generate_random_position(self):
         return random.randint(0, self.size - 1), random.randint(0, self.size - 1)
@@ -58,7 +61,8 @@ class WumpusGame:
         if self.is_valid_move(new_pos):
             self.agent_pos = new_pos
             self.handle_encounter()
-            self.score -= 1
+            if self.game_ended != True:
+                self.score -= 1
             return True
         return False
 
@@ -95,7 +99,7 @@ class WumpusGame:
             self.end_game("Game over! You fell into a pit.", self.score)
         elif self.agent_pos == self.gold_pos:
             self.score += 1000
-            self.end_game("Congratulations! You found the gold.", self.score)
+            self.end_game("handle_encounter.Congratulations! You found the gold.", self.score)
         elif self.pit_pos in self.get_adjacent_cells(self.agent_pos):
             print("You feel a cool breeze.")
 
@@ -114,9 +118,11 @@ class WumpusGame:
         self.wumpus_pos = new_pos
     
     def end_game(self, message, final_score):
+        self.display_grid()
         print(message)
         print("Your final score is:", final_score)
-        self.initialize_game()
+        self.game_ended = True
+        #self.initialize_game()
 
     def display_grid(self):
         print("+" + "-" * (4 * self.size - 1) + "+")
@@ -139,26 +145,124 @@ class WumpusGame:
                 print("|" + "---|" * self.size)
         print("+" + "-" * (4 * self.size - 1) + "+")
 
+    
+    def bfs(self):
+        # Initialize visited and queue
+        visited = set()
+        queue = deque()
+
+        # Add the agent's initial position to the queue
+        queue.append((self.agent_pos, []))
+
+        while queue:
+            position, path = queue.popleft()
+            x, y = position
+
+            # Check if the current position is the gold position
+            if position == self.gold_pos:
+                return path
+
+            # Check if the current position is not visited
+            if position not in visited:
+                visited.add(position)
+
+                # Add the adjacent cells to the queue
+                adjacent_cells = self.get_adjacent_cells(position)
+                for adjacent_cell in adjacent_cells:
+                    if adjacent_cell not in visited:
+                        queue.append((adjacent_cell, path + [adjacent_cell]))
+
+        return None
+
+    def automate_game(self):
+        for _ in range(10):
+            self.initialize_game()
+            self.display_grid()
+
+            while True:
+                # Use BFS to find the path to the gold position
+                path = self.bfs()
+
+                if path is None:
+                    print("No path to the gold position.")
+                    break
+
+                # Move the agent along the path
+                for position in path:
+                    if self.game_ended != True:
+                        direction = self.get_direction(self.agent_pos, position)
+                        self.move_agent(direction)
+                        self.display_grid()
+                        print("Score:", self.score)
+
+                    # Check if the agent found the gold or the game ended
+                    if self.agent_pos == self.gold_pos:
+                        print("Congratulations! You found the gold.")
+                        break
+                    elif self.score <= -1000:
+                        print("Game over! You lost.")
+                        break
+
+                # Check if the agent found the gold or the game ended
+                if self.agent_pos == self.gold_pos or self.score <= -1000:
+                    break
+
+                # Shoot an arrow
+                if self.arrows > 0:
+                    self.shoot_arrow('up')
+
+                    # Check if the agent found the gold or the game ended
+                    if self.agent_pos == self.gold_pos:
+                        print("Congratulations! You found the gold.")
+                        break
+                    elif self.score <= -1000:
+                        print("Game over! You lost.")
+                        break
+
+            # Check if the agent found the gold or the game ended
+            # if self.agent_pos == self.gold_pos:
+            #     print("Congratulations! You found the gold.")
+            # elif self.score <= -1000:
+            #     print("Game over! You lost.")
+                
+            #print("Final Score:", self.score)
+            print("-------------------------------------")
+        
+
+    def get_direction(self, current_pos, next_pos):
+        cx, cy = current_pos
+        nx, ny = next_pos
+
+        if cx < nx:
+            return 'down'
+        elif cx > nx:
+            return 'up'
+        elif cy < ny:
+            return 'right'
+        elif cy > ny:
+            return 'left'
+        else:
+            return ''
+
 # Testing the game
 game = WumpusGame()
-game.initialize_game()
-game.display_grid()
+game.automate_game()
 
-while True:
-    action = input("Enter your action (move: up, down, left, right; shoot: shoot up, shoot down, shoot left, shoot right): ")
-    action = action.lower().split()
+# while True:
+#     action = input("Enter your action (move: up, down, left, right; shoot: shoot up, shoot down, shoot left, shoot right): ")
+#     action = action.lower().split()
 
-    if len(action) == 2 and action[0] == 'shoot':
-        if game.shoot_arrow(action[1]):
-            game.display_grid()
-        else:
-            print("Invalid action. Try again.")
-    elif len(action) == 1 and action[0] in ['up', 'down', 'left', 'right']:
-        if game.move_agent(action[0]):
-            game.display_grid()
-        else:
-            print("Invalid action. Try again.")
-    else:
-        print("Invalid action. Try again.")
+#     if len(action) == 2 and action[0] == 'shoot':
+#         if game.shoot_arrow(action[1]):
+#             game.display_grid()
+#         else:
+#             print("Invalid action. Try again.")
+#     elif len(action) == 1 and action[0] in ['up', 'down', 'left', 'right']:
+#         if game.move_agent(action[0]):
+#             game.display_grid()
+#         else:
+#             print("Invalid action. Try again.")
+#     else:
+#         print("Invalid action. Try again.")
 
-    print("Score:", game.score)
+#     print("Score:", game.score)
