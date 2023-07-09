@@ -1,5 +1,7 @@
 import random
 import numpy as np
+import csv
+import ast
 
 class WumpusGame:
     def __init__(self, size=6):
@@ -165,6 +167,7 @@ class WumpusGame:
 
         new_q = (1 - learning_rate) * current_q + learning_rate * (reward + discount_factor * max_q_next)
         self.q_table[x, y, action] = new_q
+
     def get_direction(self, current_pos, next_pos):
         cx, cy = current_pos
         nx, ny = next_pos
@@ -185,7 +188,15 @@ class WumpusGame:
         discount_factor = 0.9
         epsilon = 0.1
 
-        for _ in range(10):
+        iterations = 1000
+
+                #Read the Q-table from the CSV file
+        qtable_loaded = np.loadtxt('qtable.csv', delimiter=',')
+
+        #Reshape the loaded Q-table to the desired shape
+        self.q_table = qtable_loaded.reshape((6, 6, 4))        
+
+        for _ in range(iterations):
             self.initialize_game()
             self.display_grid()
 
@@ -221,6 +232,10 @@ class WumpusGame:
             print("Wins:", self.wins)
             print("Losses:", self.losses)
 
+        #print("Q table", self.q_table)
+
+        np.savetxt('qtable.csv', self.q_table.flatten(), delimiter=',')
+
     def calculate_reward(self):
         if self.agent_pos == self.gold_pos:
             return 1000
@@ -242,6 +257,39 @@ class WumpusGame:
             return x, y + 1
         else:
             return x, y
+
+def insert_data_into_csv(file_path, data):
+    # Open the CSV file in append mode
+    with open(file_path, 'a', newline='') as file:
+        writer = csv.writer(file)
+        
+        # Write the data to the CSV file
+        writer.writerow(data)
+
+
+class CustomObject:
+    def __init__(self, iterations, wins, losses,qtable):
+        self.iterations = iterations
+        self.wins = wins
+        self.losses = losses
+        self.qtable = qtable
+
+def read_data_from_csv(file_path):
+    data = []
+     
+    # Open the CSV file
+    with open(file_path, 'r') as file:
+        reader = csv.reader(file)
+            
+        next(reader)
+        # Read each row of data in the CSV file
+        for row in reader:
+            iterations, wins, losses,qtable = row
+            obj = CustomObject(iterations, wins, losses,qtable)
+            data.append(obj)
+        
+    return data
+
 
 # Testing the game
 game = WumpusGame()
