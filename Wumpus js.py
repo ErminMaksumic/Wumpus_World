@@ -107,9 +107,13 @@ class WumpusGame:
             self.score += 1000
             self.end_game("Congratulations! You found the gold.", self.score)
         elif self.pit_pos in self.get_adjacent_cells(self.agent_pos):
+            self.score -= 10
             print("You feel a cool breeze.")
         elif self.wumpus_pos in self.get_adjacent_cells(self.agent_pos):
+            self.score -= 10
             print("You smell a foul stench.")
+        elif self.score < -1000:
+            self.end_game("Game over!", self.score)
 
     def handle_shot(self, pos):
         if pos == self.wumpus_pos:
@@ -194,7 +198,7 @@ class WumpusGame:
         qtable_loaded = np.loadtxt('qtable.csv', delimiter=',')
 
         #Reshape the loaded Q-table to the desired shape
-        self.q_table = qtable_loaded.reshape((6, 6, 4))        
+        self.q_table = qtable_loaded.reshape((self.size, self.size, 4))        
 
         for _ in range(iterations):
             self.initialize_game()
