@@ -1,5 +1,6 @@
 import random
 import numpy as np
+import matplotlib.pyplot as plt
 
 class WumpusGame:
     def __init__(self, size=10):
@@ -216,11 +217,7 @@ class WumpusGame:
 
         iterations = 100
 
-        #Read the Q-table from the CSV file
-        qtable_loaded = np.loadtxt('qtable.csv', delimiter=',')
-
-        #Reshape the loaded Q-table to the desired shape
-        self.q_table = qtable_loaded.reshape((self.size, self.size, 4))        
+        self.load_qtable_from_csv()        
 
         for _ in range(iterations):
             self.initialize_game()
@@ -269,9 +266,7 @@ class WumpusGame:
             print("Wins:", self.wins)
             print("Losses:", self.losses)
 
-        #print("Q table", self.q_table)
-
-        np.savetxt('qtable.csv', self.q_table.flatten(), delimiter=',')
+        self.save_qtable_to_csv()
 
     def calculate_reward(self):
         if self.agent_pos == self.gold_pos:
@@ -280,6 +275,35 @@ class WumpusGame:
             return -1000
         else:
             return -1
+        
+    def load_qtable_from_csv(self):
+        #Read the Q-table from the CSV file
+        qtable_loaded = np.loadtxt('qtable.csv', delimiter=',')
+
+        #Reshape the loaded Q-table to the desired shape
+        self.q_table = qtable_loaded.reshape((self.size, self.size, 4))
+
+    def save_qtable_to_csv(self):
+        np.savetxt('qtable.csv', self.q_table.flatten(), delimiter=',')
+
+    def visualize_q_table(self):
+        size = self.q_table.shape[0]
+        actions = ['Up', 'Down', 'Left', 'Right']
+
+        # Create a grid to represent the states
+        X, Y = np.meshgrid(range(size), range(size))
+
+        # Plot a heatmap of Q-values
+        plt.figure(figsize=(8, 6))
+        for action_idx, action in enumerate(actions):
+            plt.subplot(2, 2, action_idx + 1)
+            plt.title(f'Action: {action}')
+            plt.pcolormesh(X, Y, self.q_table[:, :, action_idx], cmap='hot')
+            plt.colorbar()
+            plt.xlabel('X')
+            plt.ylabel('Y')
+        plt.tight_layout()
+        plt.show()
 
     def get_next_position(self, action):
         x, y = self.agent_pos
@@ -299,3 +323,4 @@ class WumpusGame:
 # Testing the game
 game = WumpusGame()
 game.automate_game()
+game.visualize_q_table()
