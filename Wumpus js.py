@@ -1,15 +1,15 @@
 import random
 import numpy as np
-import csv
-import ast
 
 class WumpusGame:
-    def __init__(self, size=6):
+    def __init__(self, size=10):
         self.size = size
         self.grid = [[' ' for _ in range(size)] for _ in range(size)]
         self.agent_pos = (0, 0)
-        self.wumpus_pos = None
-        self.pit_pos = None
+        self.wumpus_pos_1 = None
+        self.wumpus_pos_2 = None
+        self.pit_pos_1 = None
+        self.pit_pos_2 = None
         self.gold_pos = None
         self.arrows = 1
         self.score = 0
@@ -20,13 +20,11 @@ class WumpusGame:
 
     def initialize_game(self):
         self.agent_pos = (0, 0)
-        self.wumpus_pos = self.generate_random_position()
-        self.pit_pos = self.generate_random_position()
-        self.gold_pos = self.generate_random_position()
-        while self.wumpus_pos == self.pit_pos or self.wumpus_pos == self.gold_pos or self.pit_pos == self.gold_pos or self.wumpus_pos == self.agent_pos or self.pit_pos == self.agent_pos or self.gold_pos == self.agent_pos:
-            self.pit_pos = self.generate_random_position()
-            self.gold_pos = self.generate_random_position()
-            self.wumpus_pos = self.generate_random_position()
+        self.wumpus_pos_1 = (6, 6) 
+        self.wumpus_pos_2 = (4, 8) 
+        self.pit_pos_1 = (4, 2) 
+        self.pit_pos_2 = (2, 7) 
+        self.gold_pos = (8, 8) 
         self.arrows = 1
         self.score = 0
         self.game_ended = False
@@ -35,8 +33,11 @@ class WumpusGame:
         return random.randint(0, self.size - 1), random.randint(0, self.size - 1)
 
     def get_adjacent_cells(self, pos):
-        x, y = pos
         adjacent_cells = []
+
+        if pos is None:
+            return adjacent_cells 
+        x, y = pos
         if x > 0:
             adjacent_cells.append((x - 1, y))
         if x < self.size - 1:
@@ -97,37 +98,50 @@ class WumpusGame:
         return False
 
     def handle_encounter(self):
-        if self.agent_pos == self.wumpus_pos:
+        if self.agent_pos == self.wumpus_pos_1 or self.agent_pos == self.wumpus_pos_2:
             self.score -= 1000
             self.end_game("Game over! You were eaten by the Wumpus.", self.score)
-        elif self.agent_pos == self.pit_pos:
+        elif self.agent_pos == self.pit_pos_1 or self.agent_pos == self.pit_pos_2:
             self.score -= 1000
             self.end_game("Game over! You fell into a pit.", self.score)
         elif self.agent_pos == self.gold_pos:
             self.score += 1000
             self.end_game("Congratulations! You found the gold.", self.score)
-        elif self.pit_pos in self.get_adjacent_cells(self.agent_pos):
+        elif self.is_pit_nearby():
             self.score -= 10
             print("You feel a cool breeze.")
-        elif self.wumpus_pos in self.get_adjacent_cells(self.agent_pos):
+        elif self.is_wumpus_nearby():
             self.score -= 10
             print("You smell a foul stench.")
         elif self.score < -1000:
             self.end_game("Game over!", self.score)
 
+    def is_pit_nearby(self):
+        return self.pit_pos_1 in self.get_adjacent_cells(self.agent_pos) or self.pit_pos_2 in self.get_adjacent_cells(self.agent_pos)
+
+    def is_wumpus_nearby(self):
+        return self.wumpus_pos_1 in self.get_adjacent_cells(self.agent_pos) or self.wumpus_pos_2 in self.get_adjacent_cells(self.agent_pos)
+
     def handle_shot(self, pos):
-        if pos == self.wumpus_pos:
+        if pos == self.wumpus_pos_1:
             print("Congratulations! You shot the Wumpus.")
-            self.wumpus_pos = None
+            self.wumpus_pos_1 = None
+            self.score += 1
+        elif pos == self.wumpus_pos_2:
+            print("Congratulations! You shot the Wumpus.")
+            self.wumpus_pos_2 = None
             self.score += 1
         else:
             print("You missed.")
-            self.move_wumpus()
+            if self.wumpus_pos_1 in self.get_adjacent_cells(self.agent_pos):
+                self.move_wumpus(self.wumpus_pos_1)
+            else:
+                self.move_wumpus(self.wumpus_pos_2)
 
-    def move_wumpus(self):
-        adjacent_cells = self.get_adjacent_cells(self.wumpus_pos)
+    def move_wumpus(self,wumpus_pos):
+        adjacent_cells = self.get_adjacent_cells(wumpus_pos)
         new_pos = random.choice(adjacent_cells)
-        self.wumpus_pos = new_pos
+        self.wumpus_pos_1 = new_pos
 
     def end_game(self, message, final_score):
         self.display_grid()
@@ -145,15 +159,23 @@ class WumpusGame:
             for j in range(self.size):
                 if (i, j) == self.agent_pos:
                     print("| A ", end="")
-                elif (i, j) == self.wumpus_pos:
+                elif (i, j) == self.wumpus_pos_1:
                     print("| W ", end="")
-                elif (i, j) == self.pit_pos:
+                elif (i, j) == self.wumpus_pos_2:
+                    print("| W ", end="")
+                elif (i, j) == self.pit_pos_1:
+                    print("| P ", end="")
+                elif (i, j) == self.pit_pos_2:
                     print("| P ", end="")
                 elif (i, j) == self.gold_pos:
                     print("| G ", end="")
-                elif (i, j) in self.get_adjacent_cells(self.pit_pos):
+                elif (i, j) in self.get_adjacent_cells(self.pit_pos_1):
                     print("| B ", end="")
-                elif (i, j) in self.get_adjacent_cells(self.wumpus_pos):
+                elif (i, j) in self.get_adjacent_cells(self.pit_pos_2):
+                    print("| B ", end="")
+                elif (i, j) in self.get_adjacent_cells(self.wumpus_pos_1):
+                    print("| S ", end="")
+                elif (i, j) in self.get_adjacent_cells(self.wumpus_pos_2):
                     print("| S ", end="")
                 else:
                     print("|   ", end="")
@@ -188,13 +210,13 @@ class WumpusGame:
             return ''
 
     def automate_game(self):
-        learning_rate = 0.1
-        discount_factor = 0.9
+        learning_rate = 0.01
+        discount_factor = 0.95
         epsilon = 0.1
 
-        iterations = 1000
+        iterations = 100
 
-                #Read the Q-table from the CSV file
+        #Read the Q-table from the CSV file
         qtable_loaded = np.loadtxt('qtable.csv', delimiter=',')
 
         #Reshape the loaded Q-table to the desired shape
@@ -206,6 +228,17 @@ class WumpusGame:
 
             while True:
                 state = self.agent_pos
+
+                if self.is_wumpus_nearby() and self.arrows > 0:
+                    self.shoot_arrow(self.get_direction(self.agent_pos, self.get_next_position(random.randint(0, 3))))
+
+                    # Check if the agent found the gold or the game ended
+                    if self.agent_pos == self.gold_pos:
+                        print("Congratulations! You found the gold.")
+                        break
+                    elif self.score <= -1000:
+                        print("Game over! You lost.")
+                        break
 
                 # Explore or exploit
                 if random.random() < epsilon:
@@ -243,7 +276,7 @@ class WumpusGame:
     def calculate_reward(self):
         if self.agent_pos == self.gold_pos:
             return 1000
-        elif self.agent_pos == self.wumpus_pos or self.agent_pos == self.pit_pos:
+        elif self.agent_pos == self.wumpus_pos_1 or self.agent_pos == self.pit_pos_1 or self.agent_pos == self.wumpus_pos_2 or self.agent_pos == self.pit_pos_2:
             return -1000
         else:
             return -1
@@ -261,38 +294,6 @@ class WumpusGame:
             return x, y + 1
         else:
             return x, y
-
-def insert_data_into_csv(file_path, data):
-    # Open the CSV file in append mode
-    with open(file_path, 'a', newline='') as file:
-        writer = csv.writer(file)
-        
-        # Write the data to the CSV file
-        writer.writerow(data)
-
-
-class CustomObject:
-    def __init__(self, iterations, wins, losses,qtable):
-        self.iterations = iterations
-        self.wins = wins
-        self.losses = losses
-        self.qtable = qtable
-
-def read_data_from_csv(file_path):
-    data = []
-     
-    # Open the CSV file
-    with open(file_path, 'r') as file:
-        reader = csv.reader(file)
-            
-        next(reader)
-        # Read each row of data in the CSV file
-        for row in reader:
-            iterations, wins, losses,qtable = row
-            obj = CustomObject(iterations, wins, losses,qtable)
-            data.append(obj)
-        
-    return data
 
 
 # Testing the game
