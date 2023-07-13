@@ -2,6 +2,14 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 
+class GameMap:
+    def __init__(self, wumpus_pos_1, wumpus_pos_2, pit_pos_1, pit_pos_2, gold_pos):
+        self.wumpus_pos_1 = wumpus_pos_1
+        self.wumpus_pos_2 = wumpus_pos_2
+        self.pit_pos_1 = pit_pos_1
+        self.pit_pos_2 = pit_pos_2
+        self.gold_pos = gold_pos
+
 class WumpusGame:
     def __init__(self, size=10):
         self.size = size
@@ -19,13 +27,13 @@ class WumpusGame:
         self.losses = 0
         self.q_table = np.zeros((size, size, 4))  # Q-table for Q-learning
 
-    def initialize_game(self):
+    def initialize_game(self,map:GameMap):
         self.agent_pos = (0, 0)
-        self.wumpus_pos_1 = (6, 6) 
-        self.wumpus_pos_2 = (4, 8) 
-        self.pit_pos_1 = (4, 2) 
-        self.pit_pos_2 = (2, 7) 
-        self.gold_pos = (8, 8) 
+        self.wumpus_pos_1 = map.wumpus_pos_1
+        self.wumpus_pos_2 = map.wumpus_pos_2
+        self.pit_pos_1 = map.pit_pos_1
+        self.pit_pos_2 = map.pit_pos_2
+        self.gold_pos = map.gold_pos
         self.arrows = 1
         self.score = 0
         self.game_ended = False
@@ -210,7 +218,7 @@ class WumpusGame:
         else:
             return ''
 
-    def automate_game(self):
+    def automate_game(self,map:GameMap):
         learning_rate = 0.01
         discount_factor = 0.95
         epsilon = 0.1
@@ -220,7 +228,7 @@ class WumpusGame:
         self.load_qtable_from_csv()        
 
         for _ in range(iterations):
-            self.initialize_game()
+            self.initialize_game(map)
             self.display_grid()
 
             while True:
@@ -321,6 +329,10 @@ class WumpusGame:
 
 
 # Testing the game
+maps = [GameMap(gold_pos=(8, 8),pit_pos_1=(4, 2),pit_pos_2=(2, 7),wumpus_pos_1=(6, 6),wumpus_pos_2=(4, 8)),
+        GameMap(gold_pos=(8, 4),pit_pos_1=(4, 5),pit_pos_2=(2, 2),wumpus_pos_1=(6, 3),wumpus_pos_2=(7,7)),
+        GameMap(gold_pos=(2, 8),pit_pos_1=(6, 4),pit_pos_2=(2, 6),wumpus_pos_1=(4, 2),wumpus_pos_2=(3, 8))]
+
 game = WumpusGame()
-game.automate_game()
+game.automate_game(map=maps[2])
 game.visualize_q_table()
